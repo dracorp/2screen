@@ -21,6 +21,9 @@
 #       screen, bash, getopt
 #       https://github.com/l0b0/shell-includes
 #
+# TODO
+#       list active a screen's sessions
+#
 # COPYRIGHT:
 #       Copyright © 2014- Piotr Roogża. 
 #
@@ -28,12 +31,17 @@
 #       There is NO WARRANTY, to the extent permitted by law.
 #==============================================================================
 
-# source shell-includes
-if [  -n "$SHELL_INCLUDES" ]; then
-    for i in $SHELL_INCLUDES/*.sh; do
-        source $i
+_source_files () { #{{{
+    local file
+    local directory=${1:-}
+    for file in $directory/*.sh; do
+        source $file
     done
-    unset i
+}	#}}} ----------  end of function _source_files  ----------
+if [ -d shell-includes ]; then
+    _source_files shell-includes
+elif [  -n "$SHELL_INCLUDES" ]; then
+    _source_files $SHELL_INCLUDES
 else
     cat <<- MISSING
 Missing sources of shell-includes. 
