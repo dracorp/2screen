@@ -6,54 +6,51 @@
 # SYNOPSIS
 #       2screen [OPTIONS] PROGRAM
 #
-# DESCRIPTION: 
-#       Runs a PROGRAM in a screen session. If the session of screen is 
-#       attached then program reattaches the session.
+# DESCRIPTION
+#       Run a PROGRAM in a screen session. If the session of screen is 
+#       detached then program reattaches the session.
 #
 #       -s
 #           name of session
 #
-# EXAMPLE:
+# EXAMPLE
 #       2screen -s 'slrn screen' slrn
 #           runs the program slrn in screen mode
 #
-# REQUIREMENTS:
+# REQUIREMENTS
 #       screen, bash, getopt
-#       https://github.com/l0b0/shell-includes
 #
 # TODO
-#       list active a screen's sessions
+#       List of active sessions of screen
 #
-# COPYRIGHT:
+# COPYRIGHT
 #       Copyright © 2014- Piotr Roogża. 
 #
 #       This is free software: you are free to change and redistribute it.
 #       There is NO WARRANTY, to the extent permitted by law.
 #==============================================================================
 
-_source_files () { #{{{
-    local file
-    local directory=${1:-}
-    for file in $directory/*.sh; do
-        source $file
-    done
-}	#}}} ----------  end of function _source_files  ----------
-if [ -d shell-includes ]; then
-    _source_files shell-includes
-elif [  -n "$SHELL_INCLUDES" ]; then
-    _source_files $SHELL_INCLUDES
-else
-    cat <<- MISSING
-Missing sources of shell-includes. 
-Please import the project https://github.com/l0b0/shell-includes 
-and export SHELL_INCLUDES to point to this directory.
-MISSING
-    exit 1
-fi
+usage() { #{{{
+    # https://github.com/l0b0/shell-includes
+    local IFS=
+    while read -r line || [ -n "$line" ]; do
+        case "$line" in
+            '#!'*) # Shebang line
+                ;;
+            '#='*) # comment from header
+                ;;
+            ''|'##'*|[!#]*) # End of comments
+                exit "${1:-0}"
+                ;;
+            *) # Comment line
+                printf '%s\n' "${line:2}" # Remove comment prefix
+                ;;
+        esac
+    done < "$0"
+} #}}}
 params="$(getopt -o s: -- "$@")"
 if [[ $? -ne 0 || $# -eq 0 ]]; then
-    usage 
-    exit 1
+    usage 1
 fi
 eval set -- "$params"
 unset params
@@ -67,13 +64,12 @@ while true; do
         --)
             shift
             if [ -z "${program_name=${@:$#}}" ]; then
-                usage
+                usage 1
             fi
             break
             ;;
         *)
             usage
-            exit 1
             ;;
     esac
 done
@@ -91,14 +87,14 @@ hardcopy="/tmp/hardcopy-${program_name}-${USER}"
 
 # Configuration for program_name
 config_override="~/.config/${program_name}-screen"
-if [[ -r "$config_override" ]]; then
+if [ -r "$config_override" ]; then
     source "$config_override"
 fi
 
 # must be exported to be accessible in subshell
 export hardcopy program_name
 # screen session
-if [[ -r "$screen_pid_file" ]]; then
+if [ -r "$screen_pid_file" ]; then
     screen -x $(<"$screen_pid_file")
 else
     screen -U -S "$session_name" -t "$session_name" bash -c "
